@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+
+IFS=$', \t\n'
+indexes=( ${@} )
+if [[ ${#indexes[@]} -eq 0 ]]; then
+    indexes=( 1 )
+fi
+IFS=$' \t\n'
+
+printers=()
+count=0
+for index in ${indexes[@]}; do
+    count=$(( count + 1 ))
+    if [[ $index =~ ^- ]]; then
+        index=$(( index + 1 ))
+        index="${index#-}"
+        index="(NF-$index)"
+    fi
+    if [[ $count -gt 1 ]]; then
+        printers+=( ", " )
+    fi
+    printers+=( "\$$index" )
+done
+
+awk "{print ${printers[*]} }"
