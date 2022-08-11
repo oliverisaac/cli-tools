@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+
+args=( "${@}" )
+
+if echo "${args[@]}" | grep -qFe '{}'; then
+    tr '\n' '\0'  | xargs -0 -n1 -I{} -- "${args[@]}"
+elif echo "${args[@]}" | grep -qEie '[%][1-9][0-9]*'; then
+    IFS=$'\n'
+
+    arg_indices=()
+
+    ind=0
+    for a in "${args[@]}"; do
+        if [[ $a =~ %([1-9][0-9]*) ]]; then
+            replace_indices+=( $ind )
+            arg_indices+=( "${BASH_REMATCH[1]}" )
+        fi
+        ind=$((ind + 1))
+    done
+
+    while read -r -d $'\n' line || [[ -n "$line" ]]; do
+        this_cmd=( "${args[@]}" )
+        this_args=(  $( tr ' ' '\n' <<< "$line" ) )
+        ind=0
+        for r in "${replace_indices[@]}"; do
+            replace_with="${this_args[${arg_indices[$ind]} - 1]}"
+            this_cmd[$r]="${this_cmd[$r]//%${arg_indices[$ind]}/$replace_with}"
+            ind=$((ind + 1))
+        done
+        "${this_cmd[@]}"
+    done
+else
+    tr '\n' '\0'  | xargs -0 -n1 -I{} -- "${args[@]}" {}
+fi
+
+
+

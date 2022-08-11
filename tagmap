@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+
+args=( "${@}" )
+
+if ! echo "${args[@]}" | grep -qFe '{}'; then
+    args+=( '{}' )
+fi
+
+command="${args[@]}"
+map bash -c "{ ${command}; } 2> >( tag {} >&2 ) | tag {}"
