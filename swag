@@ -5,7 +5,8 @@ set -u
 set -o pipefail
 
 force_flag=""
-if [[ $1 == "-f" ]] || [[ $1 == "--force" ]]; then
+force_regex='--force'
+if [[ $* =~ $force_regex ]]; then
     force_flag="--force"
     shift
 fi
