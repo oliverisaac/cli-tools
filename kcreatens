@@ -1,0 +1,15 @@
+#!/bin/bash
+
+set -euo pipefail
+
+if [[ ${1:-} == help ]] && [[ ${#} -eq 1 ]]; then
+cat >&2 <<EOF
+This script creates the specified namespace and then uses kubens to switch to it
+EOF
+exit 1
+fi
+
+
+namespace="${1?You must pass in a namespace name}"
+k create ns "${namespace}" || true
+kubens "$1"
