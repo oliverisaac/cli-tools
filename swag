@@ -4,6 +4,12 @@ set -e
 set -u
 set -o pipefail
 
+force_flag=""
+if [[ $1 == "-f" ]] || [[ $1 == "--force" ]]; then
+    force_flag="--force"
+    shift
+fi
+
 remote=${1:-origin}
 
 curr_branch=$( git rev-parse --abbrev-ref HEAD )
@@ -21,4 +27,4 @@ if [[ $upstream == "" ]]; then
     echo "Setting upstream $remote to $curr_branch..." >&2
 fi
 
-git push ${flag} "$remote" "$curr_branch"
+git push ${force_flag} ${flag} "$remote" "$curr_branch"
