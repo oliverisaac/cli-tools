@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+
+sleep_time=2
+if [[ "${1}" =~ ^[0-9]+$ ]]; then
+    sleep_time="${1}"
+    shift
+fi
+timestamp_format="+%Y-%m-%d %H:%M:%S.%3N"
+timestamp_length=$( date "$timestamp_format" | wc -c )
+
+cmd=( "${@}" )
+space_regex='.* .*'
+if [[ "${1:-}" =~ $space_regex ]]; then
+    cmd=( bash -c "${@}" )
+fi
+
+count=0
+while true; do
+    count=$(( count + 1 ))
+    printf "\n\n== %s == %2d ==\n\n" "$( date "${timestamp_format}" )" "${count}"
+    start_ms=$( date +%s%3N )
+    
+    "${cmd[@]}"
+
+    end_ms=$( date +%s%3N )
+
+    >&2 printf "\n== %-${timestamp_length}s == %2d ==" "Took $( pretty-time $(( end_ms - start_ms )) ms  )" "${count}"
+    for (( i=$sleep_time; i>0; i-- )); do
+        printf " $i"
+        sleep 1
+    done
+    echo
+done
