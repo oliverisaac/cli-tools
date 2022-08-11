@@ -1,0 +1,44 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+function open(){
+    if which open &>/dev/null; then
+        command open "${@}";
+    elif which xdg-open &>/dev/null; then
+        command xdg-open "${@}";
+    else
+        echo "open: ${@}"
+    fi
+}
+
+urls=$( git remote | xargs -I{} git remote get-url {} )
+
+topPath=$( git rev-parse --show-toplevel )
+subpath="${1:-$PWD}"
+subpath=$( readlink -f "$subpath" )
+subpath="${subpath#$topPath}"
+
+branchName=$( git branch --show-current )
+
+if url=$( echo "$urls" | grep dev.azure.com  | head -n 1 ); then
+    # example: git@ssh.dev.azure.com:v3/bushelpowered/terraform/unified-iac
+
+    read org project repo < <( echo "$url" | rev | cut -d/ -f1-3 | rev | tr '/' ' ' );
+    open -a "Google Chrome" "https://dev.azure.com/$org/$project/_git/$repo/?version=GB${branchName}&path=$subpath"
+
+elif url=$( echo "$urls" | grep 'git@bitbucket.org'  | head -n 1 ); then
+    # example: git@bitbucket.org:myriadmobile/systems-utils.git
+
+    urlPath=$( echo "$url" | cut -d: -f2 | sed 's/\.git.*$//' )
+    open "https://bitbucket.org/${urlPath}/src/${branchName}/${subpath}"
+elif url=$( echo "$urls" | grep 'git@github.com'  | head -n 1 ); then
+    # example: git@github.com:bushelpowered/terraform-provider-oncall.git
+
+    urlPath=$( echo "$url" | cut -d: -f2 | sed 's/\.git$//' )
+    open "https://github.com/${urlPath}/"
+else
+    >&2 echo "Not in an azdo backed repo: $urls"
+    exit 1
+fi
+

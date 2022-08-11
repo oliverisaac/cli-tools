@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+
+set -e
+set -u
+set -o pipefail
+
+remote=${1:-origin}
+
+curr_branch=$( git rev-parse --abbrev-ref HEAD )
+
+if [[ $curr_branch == "" ]]; then
+    echo "Not in a git repo!" >&2
+    exit 12
+fi
+
+upstream=$( git branch --list --format '%(upstream)' "$curr_branch" )
+
+flag=""
+if [[ $upstream == "" ]]; then
+    flag="--set-upstream"
+    echo "Setting upstream $remote to $curr_branch..." >&2
+fi
+
+git push ${flag} "$remote" "$curr_branch"
