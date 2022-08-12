@@ -10,13 +10,17 @@ function main(){
     local repo_query="${2:-}"
     local destination="${3:-}"
 
+    if [[ $destination == "temp" ]] || [[ $destination == tmp ]]; then
+        destination=$( mktemp -d )
+    fi
+
     project_repo=( $( az-repo-select "$project_query" "${repo_query}" ) )
     project="${project_repo[0]}"
     repo="${project_repo[1]}"
 
     destination="${destination:-$HOME/git/$project/$repo}"
     mkdir -p "$destination"
-    git clone "git@ssh.dev.azure.com:v3/${AZDO_ORG}/$project/$repo" "$HOME/git/$project/$repo"
+    git clone "git@ssh.dev.azure.com:v3/${AZDO_ORG}/$project/$repo" "$destination"
 }
 
 
