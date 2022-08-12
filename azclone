@@ -16,7 +16,7 @@ function main(){
 
     destination="${destination:-$HOME/git/$project/$repo}"
     mkdir -p "$destination"
-    echo git clone "git@ssh.dev.azure.com:v3/${AZDO_ORG}/$project/$repo" "$HOME/git/$project/$repo"
+    git clone "git@ssh.dev.azure.com:v3/${AZDO_ORG}/$project/$repo" "$HOME/git/$project/$repo"
 }
 
 
