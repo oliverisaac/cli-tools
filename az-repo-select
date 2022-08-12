@@ -25,7 +25,7 @@ function get_all_projects(){
     local cache_time_seconds=$(( 60 * 60 )) # 1 hour
     local org="${1?you must pass in the org url}"
 
-    if  ! [[ -e "$cache_file" ]] || [[ $(( $( date +%s ) - $( stat -c %Y "$cache_file" ) )) -gt $cache_time_seconds ]]; then
+    if  ! [[ -e "$cache_file" ]] || [[ $(( $( date +%s ) - $( /usr/bin/stat -f %m "$cache_file" ) )) -gt $cache_time_seconds ]]; then
         skip=0
         while true; do
             these_projects=( $(  az devops project list --output=json --org="$org" --skip=$skip | jq '.value[].name' -r ) )
