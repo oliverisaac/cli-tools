@@ -1,0 +1,44 @@
+#!/usr/bin/env bash
+
+set -e
+set -o pipefail
+set -E
+
+function tab_color_rgb(){
+    printf "\033]6;1;bg;red;brightness;%s\a" $1
+    printf "\033]6;1;bg;green;brightness;%s\a" $2
+    printf "\033]6;1;bg;blue;brightness;%s\a" $3
+}
+
+function tab_color {
+    case $1 in
+    green)
+        tab_color_rgb 57 197 77
+    ;;
+    red)
+        tab_color_rgb 270 60 83
+    ;;
+    orange)
+        tab_color_rgb 227 143 10
+    ;;
+    blue )
+        tab_color_rgb 83 60 270
+    ;;
+    cyan )
+        tab_color_rgb 0 200 200
+    ;;
+    clear|reset)
+        echo -e "\033]6;1;bg;*;default\a"
+    ;;
+    * )
+        if [[ ${#} -eq 3 ]]; then
+            tab_color_rgb "${@}"
+        else
+            >&2 echo "Unrecognized color: ${@}"
+            return 1
+        fi
+    ;;
+    esac
+}
+
+tab_color "${@}"
