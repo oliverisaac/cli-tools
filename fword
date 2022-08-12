@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 IFS=$', \t\n'
-indexes=( ${@} )
+indexes=( ${@:-} )
 if [[ ${#indexes[@]} -eq 0 ]]; then
     indexes=( 1 )
 fi

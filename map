@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-args=( "${@}" )
+args=( "${@:-}" )
 
 if echo "${args[@]}" | grep -qFe '{}'; then
     tr '\n' '\0'  | xargs -0 -n1 -I{} -- "${args[@]}"

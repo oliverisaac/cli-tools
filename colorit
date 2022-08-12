@@ -31,4 +31,4 @@ function colorit(){
     printf "%b" '\001\e[0m\002'"${colored_item}"'\001\e[0m\002';
 }
 
-colorit "${@}"
+colorit "${@:-}"

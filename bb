@@ -14,16 +14,16 @@ LOG_WITH_DATE=false
 
 function open(){
     if ! [[ -t 1 ]]; then
-        echo "${@}"
+        echo "${@:-}"
         return 0
     fi
 
     if which open &>/dev/null; then
-        command open "${@}";
+        command open "${@:-}";
     elif which xdg-open &>/dev/null; then
-        command xdg-open "${@}";
+        command xdg-open "${@:-}";
     else
-        echo "open: ${@}"
+        echo "open: ${@:-}"
     fi
 }
 
@@ -85,18 +85,18 @@ function log(){
         ${LOG_IN_COLOR} && echo -en "\\002$color_pre\\003";
         echo -n "[${LEVEL_WORD: 0:4}$date]:"
         ${LOG_IN_COLOR} && echo -en "\\002$color_post\\003";
-        echo " ${@}"
+        echo " ${@:-}"
     } >&2
 }
 
-function trace(){ log $LOG_LEVEL_TRACE "${@}"; }
-function debug(){ log $LOG_LEVEL_DEBUG "${@}"; }
-function info(){ log $LOG_LEVEL_INFO "${@}"; }
-function warn(){ log $LOG_LEVEL_WARN "${@}"; }
-function error(){ log $LOG_LEVEL_ERROR "${@}"; }
-function fatal(){ log $LOG_LEVEL_FATAL "${@}"; exit 1; return 1; }
+function trace(){ log $LOG_LEVEL_TRACE "${@:-}"; }
+function debug(){ log $LOG_LEVEL_DEBUG "${@:-}"; }
+function info(){ log $LOG_LEVEL_INFO "${@:-}"; }
+function warn(){ log $LOG_LEVEL_WARN "${@:-}"; }
+function error(){ log $LOG_LEVEL_ERROR "${@:-}"; }
+function fatal(){ log $LOG_LEVEL_FATAL "${@:-}"; exit 1; return 1; }
 
-main "${@}"
+main "${@:-}"
 
 exit $?
 

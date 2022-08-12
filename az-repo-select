@@ -49,4 +49,4 @@ function get_all_repos(){
     az repos list --project="$project" --output=json --org="$org"  | jq '.[].name' -r 
 }
 
-main "${@}"
+main "${@:-}"

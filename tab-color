@@ -11,7 +11,8 @@ function tab_color_rgb(){
 }
 
 function tab_color {
-    case $1 in
+    color="${1?You must pass in a tab color}"
+    case $color in
     green)
         tab_color_rgb 57 197 77
     ;;
@@ -41,4 +42,4 @@ function tab_color {
     esac
 }
 
-tab_color "${@}"
+tab_color "${@:-}"

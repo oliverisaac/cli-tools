@@ -4,11 +4,11 @@ set -euo pipefail
 
 function open(){
     if which open &>/dev/null; then
-        command open "${@}";
+        command open "${@:-}";
     elif which xdg-open &>/dev/null; then
-        command xdg-open "${@}";
+        command xdg-open "${@:-}";
     else
-        echo "open: ${@}"
+        echo "open: ${@:-}"
     fi
 }
 

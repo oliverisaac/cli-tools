@@ -8,10 +8,10 @@ fi
 timestamp_format="+%Y-%m-%d %H:%M:%S.%3N"
 timestamp_length=$( date "$timestamp_format" | wc -c )
 
-cmd=( "${@}" )
+cmd=( "${@:-}" )
 space_regex='.* .*'
 if [[ "${1:-}" =~ $space_regex ]]; then
-    cmd=( bash -c "${@}" )
+    cmd=( bash -c "${@:-}" )
 fi
 
 count=0
