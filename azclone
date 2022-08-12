@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+: ${AZDO_ORG:?You must define AZDO_ORG as the string portion of your azdo org}
+export AZDO_ORG_SERVICE_URL="${AZDO_ORG_SERVICE_URL:-https://dev.azure.com/${AZDO_ORG}/}"
+
+function main(){
+    local project_query="${1:-}"
+    local repo_query="${2:-}"
+    local destination="${3:-}"
+
+    project_repo=( $( az-repo-select "$project_query" "${repo_query}" ) )
+    project="${project_repo[0]}"
+    repo="${project_repo[1]}"
+
+    destination="${destination:-$HOME/git/$project/$repo}"
+    mkdir -p "$destination"
+    echo git clone "git@ssh.dev.azure.com:v3/${AZDO_ORG}/$project/$repo" "$HOME/git/$project/$repo"
+}
+
+
+main "${@}"

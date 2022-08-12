@@ -1,0 +1,52 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+: ${AZDO_ORG_SERVICE_URL:?You must define AZDO_ORG_SERVICE_URL as the full org url for azdo api calls}
+
+function main(){
+    local project_query="${1:-}"
+    local repo_query="${2:-}"
+    local destination="${3:-}"
+    export IFS=$'\n'
+
+    projects=( $( get_all_projects "$AZDO_ORG_SERVICE_URL" ) )
+    project=$( printf "%s\n" "${projects[@]}" | fzf --query="${project_query}" --select-1 )
+
+    repos=(  $( get_all_repos "$AZDO_ORG_SERVICE_URL" "$project" )  )
+    repo=$( printf "%s\n" "${repos[@]}" | fzf --query="${repo_query}" --select-1 )
+
+    echo "$project"
+    echo "$repo"
+}
+
+function get_all_projects(){
+    local cache_file=/tmp/azdo-project-list-cache-file.lst
+    local cache_time_seconds=$(( 60 * 60 )) # 1 hour
+    local org="${1?you must pass in the org url}"
+
+    if  ! [[ -e "$cache_file" ]] || [[ $(( $( date +%s ) - $( stat -c %Y "$cache_file" ) )) -gt $cache_time_seconds ]]; then
+        skip=0
+        while true; do
+            these_projects=( $(  az devops project list --output=json --org="$org" --skip=$skip | jq '.value[].name' -r ) )
+            if [[ ${#these_projects[@]} -eq 0 ]]; then
+                break
+            fi
+            printf "%s\n" "${these_projects[@]}"
+            skip=$(( skip + ${#these_projects[@]} ))
+        done > "$cache_file"
+    fi
+
+    cat "$cache_file"
+    return 0
+}
+
+function get_all_repos(){
+    local org="${1?you must pass in the org url}"
+    local project="${2?you must pass in the project name}"
+
+    # az repos list does not have a skip option
+    az repos list --project="$project" --output=json --org="$org"  | jq '.[].name' -r 
+}
+
+main "${@}"
