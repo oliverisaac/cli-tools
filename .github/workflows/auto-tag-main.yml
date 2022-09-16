@@ -1,4 +1,4 @@
-# from: https://github.com/marketplace/actions/get-next-version-action
+# from: https://github.com/marketplace/actions/simple-version
 
 on:
   # Allows you to run this workflow manually from the Actions tab
@@ -14,8 +14,9 @@ jobs:
     name: Add release tag
     runs-on: ubuntu-latest
     steps:
-      - name: Get next version
-        uses: technote-space/get-next-version-action@v1
+      - name: Get version and version code
+        uses: xom9ikk/version-by-tag@v1
+        id: version_by_tag
       - uses: actions/github-script@0.4.0
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -23,6 +24,6 @@ jobs:
             github.git.createRef({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              ref: `refs/tags/${process.env.NEXT_VERSION}`,
+              ref: `refs/tags/${steps.version_by_tag.outputs.tag}`,
               sha: context.sha
             })
