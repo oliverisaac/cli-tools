@@ -27,7 +27,8 @@ jobs:
 
       - name: Generate Formula Definition
         env:
-          TAP_NAME: cli-tools
+          DEPENDENCIES: coreutils,oliverisaac/koi,:bash = >"5",jq,y
+          OUTPUT_FILE: cli-tools.rb
         run: bash .github/scripts/generate_formula.sh
 
       # TODO: Add a step to validate the tap file

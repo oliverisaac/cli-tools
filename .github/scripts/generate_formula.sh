@@ -50,10 +50,12 @@ function main() {
 
         clone_from_git "${TAP_REPO?You must define the repo to be tapped}"
 
-        depends_on "coreutils"
-        depends_on "oliverisaac/koi"
-        depends_on ':bash = >"5"'
+        echo
+        while IFS= read -r -d '' dependency; do
+            depends_on "$dependency"
+        done < <(echo "$DEPENDENCIES" | tr ',' '\0')
 
+        echo
         while IFS= read -r -d '' exe; do
             install_binary "$exe"
         done < <(find . -maxdepth 1 -perm +111 -type f -print0)
@@ -62,6 +64,8 @@ function main() {
     } | tee "${OUTPUT_FILE:-${TAP_NAME}.rb}"
 }
 
+export DEFUALT_DEPENDENCIES='coreutils,:bash = >"5"'
+export DEPENDENCIES="${DEPENDENCIES:-$DEFUALT_DEPENDENCIES}"
 export GITHUB_REPOSITORY="${GITHUB_REPOSITORY:-oliverisaac/cli-tools}"
 export BASE_REPO_NAME="${GITHUB_REPOSITORY##*/}"
 export TAP_NAME="${TAP_NAME:-${BASE_REPO_NAME}}"
