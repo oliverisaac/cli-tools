@@ -35,13 +35,16 @@ function depends_on() {
 function install_binary() {
     local exe="${1?you must pass in an exe}"
     echo "bin.install \"$exe\"" | indent 2
-    tar --append --file="${RELEASE_ARTIFACT}" "$exe"
 }
 
 function clone_from_git() {
     local repo="${1?you must pass in a git repo}"
+    local tag="${2?you must pass in a release tag}"
     echo "head \"${repo}\", :using => :git" | indent
-    echo "url \"${repo}\", :using => :git" | indent
+    download_url="https://${repo}/archive/refs/tags/${tag}.tar.gz"
+    echo "url \"${download_url}\"" | indent
+    sha=$(curl -L --fail "$download_url" | sha256sum | awk '{print $1}')
+    printf 'sha256 "%s"\n' "$sha" | indent
 }
 
 function define_install() {
@@ -52,7 +55,7 @@ function main() {
     {
         set_class "${TAP_NAME?You must pass in a name for this tap}"
 
-        clone_from_git "${TAP_REPO?You must define the repo to be tapped}"
+        clone_from_git "${TAP_REPO?You must define the repo to be tapped}" "${RELEAST_TAG?You msut define a release tag to base your release off of}"
 
         echo
         while IFS= read -r -d '' dependency; do
@@ -81,5 +84,6 @@ export GITHUB_REPOSITORY="${GITHUB_REPOSITORY:-oliverisaac/cli-tools}"
 export BASE_REPO_NAME="${GITHUB_REPOSITORY##*/}"
 export TAP_NAME="${TAP_NAME:-${BASE_REPO_NAME}}"
 export TAP_REPO="${TAP_REPO:-github.com/${GITHUB_REPOSITORY:-oliverisaac/cli-tools}}"
+export RELEAST_TAG="${RELEASE_TAG:-v1.0.0}"
 export RELEASE_ARTIFACT="${RELEASE_ARTIFACT:-${TAP_NAME}.tar.gz}"
 main "${@}"
