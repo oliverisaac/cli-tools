@@ -48,7 +48,7 @@ jobs:
       - name: Generate Formula Definition
         env:
           # Comma separated list of dependencies
-          DEPENDENCIES: coreutils,oliverisaac/koi,bash,jq,y
+          DEPENDENCIES: coreutils,oliverisaac/tap/koi,bash,jq,y
           OUTPUT_FILE: cli-tools.rb
           RELEASE_TAG: ${{ steps.bump_version.outputs.version }}
         run: bash .github/scripts/generate_formula.sh || exit $?
