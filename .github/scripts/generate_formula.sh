@@ -35,11 +35,13 @@ function depends_on() {
 function install_binary() {
     local exe="${1?you must pass in an exe}"
     echo "bin.install \"$exe\"" | indent 2
+    tar --append --file="${RELEASE_ARTIFACT}" "$exe"
 }
 
 function clone_from_git() {
     local repo="${1?you must pass in a git repo}"
     echo "head \"${repo}\", :using => :git" | indent
+    echo "url \"${repo}\", :using => :git" | indent
 }
 
 function define_install() {
@@ -79,4 +81,5 @@ export GITHUB_REPOSITORY="${GITHUB_REPOSITORY:-oliverisaac/cli-tools}"
 export BASE_REPO_NAME="${GITHUB_REPOSITORY##*/}"
 export TAP_NAME="${TAP_NAME:-${BASE_REPO_NAME}}"
 export TAP_REPO="${TAP_REPO:-github.com/${GITHUB_REPOSITORY:-oliverisaac/cli-tools}}"
+export RELEASE_ARTIFACT="${RELEASE_ARTIFACT:-${TAP_NAME}.tar.gz}"
 main "${@}"
