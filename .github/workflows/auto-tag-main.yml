@@ -18,6 +18,8 @@ jobs:
       - name: Get version and version code
         uses: xom9ikk/version-by-tag@v1
         id: version_by_tag
+        with:
+          offset: 1
       - uses: actions/github-script@0.4.0
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -25,6 +27,6 @@ jobs:
             github.git.createRef({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              ref: `refs/tags/${steps.version_by_tag.outputs.tag}`,
+              ref: `refs/tags/${{steps.version_by_tag.outputs.tag}}`,
               sha: context.sha
             })
