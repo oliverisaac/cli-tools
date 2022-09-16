@@ -25,10 +25,10 @@ jobs:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v3
 
-      - name: Generate Tap Definition
-        # TODO: Actaully generate the homebrew tap
-        run: |
-          echo "" > cli-tools.rb
+      - name: Generate Formula Definition
+        env:
+          TAP_NAME: cli-tools
+        run: bash .github/scripts/generate_formula.sh
 
       # TODO: Add a step to validate the tap file
 
