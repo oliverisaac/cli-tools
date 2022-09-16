@@ -11,7 +11,7 @@ function set_class() {
     echo "class ${class_name} < Formula"
 }
 
-function end_class() {
+function end() {
     echo "end"
 }
 
@@ -34,12 +34,16 @@ function depends_on() {
 
 function install_binary() {
     local exe="${1?you must pass in an exe}"
-    echo "bin.install \"$exe\"" | indent 1
+    echo "bin.install \"$exe\"" | indent 2
 }
 
 function clone_from_git() {
     local repo="${1?you must pass in a git repo}"
     echo "head \"${repo}\", :using => :git" | indent
+}
+
+function define_install() {
+    echo "def install" | indent
 }
 
 function main() {
@@ -54,13 +58,18 @@ function main() {
         done < <(echo "$DEPENDENCIES" | tr ',' '\0')
 
         echo
+
+        define_install
         # The find command generates a \0 on print0, so we base64 encode it temporarily
         find_output="$(find . -maxdepth 1 -perm -111 -type f -print0 | base64)"
         while IFS= read -r -d '' exe; do
             install_binary "$exe"
         done < <(echo "$find_output" | base64 -d)
 
-        end_class
+        end | indent # install
+
+        end # class
+
     } | tee "${OUTPUT_FILE:-${TAP_NAME}.rb}"
 }
 
