@@ -27,7 +27,8 @@ jobs:
 
       - name: Generate Formula Definition
         env:
-          DEPENDENCIES: coreutils,oliverisaac/koi,:bash = >"5",jq,y
+          # Comma separated list of dependencies
+          DEPENDENCIES: coreutils,oliverisaac/koi,bash,jq,y
           OUTPUT_FILE: cli-tools.rb
         run: bash .github/scripts/generate_formula.sh || exit $?
 

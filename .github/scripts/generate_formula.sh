@@ -64,7 +64,7 @@ function main() {
     } | tee "${OUTPUT_FILE:-${TAP_NAME}.rb}"
 }
 
-export DEFUALT_DEPENDENCIES='coreutils,:bash = >"5"'
+export DEFUALT_DEPENDENCIES='coreutils,:bash => "^5"'
 export DEPENDENCIES="${DEPENDENCIES:-$DEFUALT_DEPENDENCIES}"
 export GITHUB_REPOSITORY="${GITHUB_REPOSITORY:-oliverisaac/cli-tools}"
 export BASE_REPO_NAME="${GITHUB_REPOSITORY##*/}"
