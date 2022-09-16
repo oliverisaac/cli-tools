@@ -1,8 +1,6 @@
 #!/usr/bin/env bash
 
-set -euo pipefail # safety checks for unset variables, errors, and errors in pipes
-
-export indent="  "
+set -eEuo pipefail # safety checks for unset variables, errors, and errors in pipes
 
 function set_class() {
     local class_name
@@ -56,9 +54,11 @@ function main() {
         done < <(echo "$DEPENDENCIES" | tr ',' '\0')
 
         echo
+        # The find command generates a \0 on print0, so we base64 encode it temporarily
+        find_output="$(find . -maxdepth 1 -perm -111 -type f -print0 | base64)"
         while IFS= read -r -d '' exe; do
             install_binary "$exe"
-        done < <(find . -maxdepth 1 -perm +111 -type f -print0)
+        done < <(echo "$find_output" | base64 -d)
 
         end_class
     } | tee "${OUTPUT_FILE:-${TAP_NAME}.rb}"
