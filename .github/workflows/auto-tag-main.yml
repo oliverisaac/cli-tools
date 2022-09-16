@@ -20,6 +20,16 @@ jobs:
         id: version_by_tag
         with:
           offset: 1
+
+      - name: Bump the version
+        id: bump_version
+        env:
+          CURRENT_VERSION: ${{steps.version_by_tag.outputs.tag}}
+        run: |-
+          minor_version=$( echo "$CURRENT_VERSION" | cut -d'.' -f3 ) 
+          version_prefix=$( echo "$CURRENT_VERSION" | cut -d'.' -f-2 ) 
+          echo ::set-output name=version::${version_prefix}.$(( minor_version + 1 ))
+
       - uses: actions/github-script@0.4.0
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -27,6 +37,6 @@ jobs:
             github.git.createRef({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              ref: `refs/tags/${{steps.version_by_tag.outputs.tag}}`,
+              ref: `refs/tags/${{steps.bump_version.outputs.version}}`,
               sha: context.sha
             })
