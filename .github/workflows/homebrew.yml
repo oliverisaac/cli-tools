@@ -1,12 +1,12 @@
 # This is a basic workflow to help you get started with Actions
 name: Publish To Homebrew
 
-# Controls when the workflow will run
 on:
-  # Triggers the workflow on push or pull request events but only for the "main" branch
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch: {}
   push:
-    tags:
-      - v* # Automatically run on version tagging
+    branches:
+      - main
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
@@ -19,17 +19,38 @@ jobs:
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v3
+      - name: Get version and version code
+        uses: xom9ikk/version-by-tag@v1
+        id: version_by_tag
+        with:
+          offset: 1
 
-      - name: Set output
-        id: vars
-        run: echo ::set-output name=tag::${GITHUB_REF#refs/*/}
+      - name: Bump the version
+        id: bump_version
+        env:
+          CURRENT_VERSION: ${{steps.version_by_tag.outputs.tag}}
+        run: |-
+          minor_version=$( echo "$CURRENT_VERSION" | cut -d'.' -f3 ) 
+          version_prefix=$( echo "$CURRENT_VERSION" | cut -d'.' -f-2 ) 
+          echo ::set-output name=version::${version_prefix}.$(( minor_version + 1 ))
+
+      - uses: actions/github-script@0.4.0
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            github.git.createRef({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: `refs/tags/${{steps.bump_version.outputs.version}}`,
+              sha: context.sha
+            })
 
       - name: Generate Formula Definition
         env:
           # Comma separated list of dependencies
           DEPENDENCIES: coreutils,oliverisaac/koi,bash,jq,y
           OUTPUT_FILE: cli-tools.rb
-          RELEASE_TAG: ${{ steps.vars.outputs.tag }}
+          RELEASE_TAG: ${{ steps.bump_version.outputs.version }}
         run: bash .github/scripts/generate_formula.sh || exit $?
 
       # TODO: Add a step to validate the tap file
