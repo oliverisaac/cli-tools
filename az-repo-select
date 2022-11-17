@@ -46,7 +46,7 @@ function get_all_repos(){
     local project="${2?you must pass in the project name}"
 
     # az repos list does not have a skip option
-    az repos list --project="$project" --output=json --org="$org"  | jq '.[].name' -r 
+    az repos list --project="$project" --output=json --org="$org"  | jq '.[] | select(.isDisabled | not) | .name' -r 
 }
 
 main "${@:-}"

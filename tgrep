@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+
+grep --color=auto -Ei -e "$( tg "${@}" )"

@@ -25,7 +25,7 @@ if url=$( echo "$urls" | grep dev.azure.com  | head -n 1 ); then
     # example: git@ssh.dev.azure.com:v3/bushelpowered/terraform/unified-iac
 
     read org project repo < <( echo "$url" | rev | cut -d/ -f1-3 | rev | tr '/' ' ' );
-    open -a "Google Chrome" "https://dev.azure.com/$org/$project/_git/$repo/?version=GB${branchName}&path=$subpath"
+    open "https://dev.azure.com/$org/$project/_git/$repo/?version=GB${branchName}&path=$subpath"
 
 elif url=$( echo "$urls" | grep 'git@bitbucket.org'  | head -n 1 ); then
     # example: git@bitbucket.org:myriadmobile/systems-utils.git

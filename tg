@@ -1,0 +1,118 @@
+#!/usr/bin/env bash
+
+set -eEuo pipefail
+
+declare -A regex_patterns
+
+regex_patterns["number"]='[1-9][0-9]*(.[0-9]+)?'
+regex_patterns["uuid"]='[0-9A-Fa-f-]{8}-[0-9A-Fa-f-]{4}-[0-9A-Fa-f-]{4}-[0-9A-Fa-f-]{4}-[0-9A-Fa-f-]{12}'
+regex_patterns["integer"]='[0-9]+'
+regex_patterns["int"]='[0-9]+'
+regex_patterns["email"]='[^ ]+@[^ ]+[.][^ ]+'
+regex_patterns["word"]='\b[a-zA-Z0-9-]+\b'
+
+function templated_grep() {
+	local input_regex="${1?You must pass in a file of input regex queries}"
+
+	## If a user enters just `uuid` we want to accept that
+	shorthand_pattern="${regex_patterns["${input_regex,,}"]:-}"
+	if [[ ${shorthand_pattern} != "" ]]; then
+		printf "%s" "${shorthand_pattern}"
+		return 0
+	fi
+
+	local line_length="${#input_regex}"
+	local in_pattern=false
+	local pattern=""
+
+	for ((i = 0; i < line_length; i++)); do
+		this_char="${input_regex:$i:1}"
+		next_two="${input_regex:$i:2}"
+
+		if [[ ${next_two} == "{{" ]]; then
+			((i++))
+			in_pattern=true
+			pattern=""
+			continue
+		elif [[ ${next_two} == "}}" ]]; then
+			((i++))
+			in_pattern=false
+
+			# If pattern is a keyword matching regex_patterns, then use that, otherwise, use pattern
+			pattern="${regex_patterns["${pattern,,}"]:-"${pattern}"}"
+			printf "%s" "${pattern}"
+			continue
+		elif ${in_pattern}; then
+			pattern+="${this_char}"
+			continue
+		fi
+
+		case "${this_char}" in
+		'/')
+			printf "%s" "\\${this_char}"
+			;;
+		'\')
+			printf "%s" "\\${this_char}"
+			;;
+		'?')
+			printf "%s" "\\${this_char}"
+			;;
+		'#')
+			printf "%s" "\\${this_char}"
+			;;
+		'[')
+			printf "%s" "\\${this_char}"
+			;;
+		']')
+			printf "%s" "\\${this_char}"
+			;;
+		'@')
+			printf "%s" "\\${this_char}"
+			;;
+		'!')
+			printf "%s" "\\${this_char}"
+			;;
+		'$')
+			printf "%s" "\\${this_char}"
+			;;
+		'&')
+			printf "%s" "\\${this_char}"
+			;;
+		'(')
+			printf "%s" "\\${this_char}"
+			;;
+		')')
+			printf "%s" "\\${this_char}"
+			;;
+		'*')
+			printf "%s" "\\${this_char}"
+			;;
+		'+')
+			printf "%s" "\\${this_char}"
+			;;
+		',')
+			printf "%s" "\\${this_char}"
+			;;
+		';')
+			printf "%s" "\\${this_char}"
+			;;
+		'=')
+			printf "%s" "\\${this_char}"
+			;;
+		'%')
+			printf "%s" "\\${this_char}"
+			;;
+		*)
+			printf "%s" "${this_char}"
+			;;
+		esac
+	done
+}
+
+for regex in "${@}"; do
+	this_regex=$(templated_grep "${regex?You must pass in a regex}")
+	if [[ ${DEBUG:-} == true ]]; then
+		echo >&2 "${0##*/}: generated regex: ${this_regex}"
+	fi
+	printf "%s\n" "${this_regex}"
+done

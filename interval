@@ -15,6 +15,8 @@ if [[ "${1:-}" =~ $space_regex ]]; then
 fi
 
 count=0
+>&2 echo "Running: ${cmd[*]}"
+
 while true; do
     count=$(( count + 1 ))
     printf "\n\n== %s == %2d ==\n\n" "$( date "${timestamp_format}" )" "${count}"
