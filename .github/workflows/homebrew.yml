@@ -1,0 +1,90 @@
+# This is a basic workflow to help you get started with Actions
+name: Publish To Homebrew
+
+on:
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch: {}
+  push:
+    branches:
+      - main
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  # This workflow contains a single job called "build"
+  build:
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - uses: actions/checkout@v3
+      - name: Get version and version code
+        uses: xom9ikk/version-by-tag@v1
+        id: version_by_tag
+        with:
+          offset: 1
+
+      - name: Bump the version
+        id: bump_version
+        env:
+          CURRENT_VERSION: ${{steps.version_by_tag.outputs.tag}}
+        run: |-
+          minor_version=$( echo "$CURRENT_VERSION" | cut -d'.' -f3 ) 
+          version_prefix=$( echo "$CURRENT_VERSION" | cut -d'.' -f-2 ) 
+          echo ::set-output name=version::${version_prefix}.$(( minor_version + 1 ))
+
+      - uses: actions/github-script@0.4.0
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            github.git.createRef({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: `refs/tags/${{steps.bump_version.outputs.version}}`,
+              sha: context.sha
+            })
+
+      - name: Generate Formula Definition
+        env:
+          # Comma separated list of dependencies
+          DEPENDENCIES: coreutils,oliverisaac/tap/koi,bash,jq,y
+          OUTPUT_FILE: cli-tools.rb
+          RELEASE_TAG: ${{ steps.bump_version.outputs.version }}
+        run: bash .github/scripts/generate_formula.sh || exit $?
+
+      # TODO: Add a step to validate the tap file
+
+      # The credentials to push are in : HOMEBREW_TAP_GITHUB_CREDS
+      - name: Publish homebrew tap file
+        env:
+          GITHUB_TOKEN: ${{ secrets.HOMEBREW_TAP_GITHUB_CREDS }}
+          GITHUB_REPO: oliverisaac/homebrew-tap
+          BRANCH_NAME: main
+        run: |
+          # Clean up github config from the repo:
+          # from: https://stackoverflow.com/questions/64374179/how-to-push-to-another-repository-in-github-actions
+          git config --unset-all http.https://github.com/.extraheader
+
+          # Define our tap file
+          tap_file=$( readlink -f "cli-tools.rb" )
+          tap_filename=$( basename "$tap_file" )
+
+          # Checkout our tap repo
+          tap_dir=$( mktemp -d )
+          git clone https://user:$GITHUB_TOKEN@github.com/${GITHUB_REPO} "$tap_dir"
+
+          # Configure the repo
+          cd "$tap_dir"
+          git config user.name "Oliver Isaac (Automated)"
+          git config user.email "oisaac+github@gmail.com"
+          git checkout "$BRANCH_NAME"
+
+          # Add our tap file
+          formula_location="Formula/$tap_filename"
+          mv -v "$tap_file" "$formula_location"
+          git add "$formula_location"
+          git commit -m "Update to $tap_filename"
+
+          # Push it up
+          git push --set-upstream origin "$BRANCH_NAME"
