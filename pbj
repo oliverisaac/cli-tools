@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 
-args=( "${@}" )
-if [[ ${#args[@]} -eq 0  ]]; then
-    args=( . )
+args=("${@}")
+if [[ ${#args[@]} -eq 0 ]]; then
+	args=(.)
 fi
 
-pbpaste | yq "${args[@]}"
+pbpaste | yq -P -o json "${args[@]}"
