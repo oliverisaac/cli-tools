@@ -1,0 +1,70 @@
+#!/usr/bin/env bash
+
+set -Eeuo pipefail
+shopt -s inherit_errexit
+
+export createSecretOption="Create new secret..."
+
+function get_vault_path() {
+    local path
+    path="${1:-}"
+
+    while [[ $path =~ /$ ]]; do
+        new_path=$(
+            vault kv list -format=json "${path}" |
+                jq --arg createSecret "$createSecretOption" -r '. + [ $createSecret ] | .[]' |
+                fzf --prompt="Path: ${path}" --preview="
+            if [[ {} == '$createSecretOption' ]]; then
+                echo 'Create new secret...'
+            elif [[ {} =~ /$ ]]; then
+                vault kv list -format=table '${path}{}'
+            else
+                vault kv get -format=table '${path}{}' 
+            fi"
+        )
+        path="${path%/}/${new_path}"
+    done
+    echo "$path"
+}
+
+function main() {
+    local path
+    path=$(get_vault_path "${1:-${VEDIT_DEFAULT_KV_PATH:-secret/}}")
+
+    if [[ ${path##*/} == "$createSecretOption" ]]; then
+        read -p "Enter the new secret name: ${path%/*}/" new_secret
+        path="${path%/*}/${new_secret}"
+        if ! vault kv get "$path" >/dev/null; then
+            echo >&2 "Creating new secret: ${path}"
+            vault kv put "${path}" placeholder="delete-this" >/dev/null
+        else
+            echo >&2 "ERROR: Secret already exists: ${path}"
+        fi
+    fi
+
+    content=$(vault kv get -format=json "${path}" | jq -r '.data.data' | yq -P -o yaml)
+
+    tmpfile=$(mktemp --suffix=.yaml)
+
+    echo >&2 "Editing at: ${tmpfile}"
+    echo "${content}" >"${tmpfile}"
+
+    if ! "${EDITOR:=vim}" "${tmpfile}"; then
+        echo >&2 "ERROR: ${EDITOR} did not exit cleanly"
+        exit 1
+    fi
+
+    new_content=$(cat "${tmpfile}")
+    if [[ "${new_content}" == "${content}" ]]; then
+        echo >&2 "No changes detected, exiting"
+        exit 0
+    fi
+
+    cat "${tmpfile}" | yq -o json . | vault kv put "${path}" @/dev/stdin
+    echo >&2
+    echo >&2 "Updated path: ${path}"
+    echo >&2
+    vault kv get "${path}"
+}
+
+main "${@}"
