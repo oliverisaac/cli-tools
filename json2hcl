@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+
+dir=$( mktemp -d );
+cd "$dir";
+terraform console <<< "jsondecode($( yq -o json | jq '. | tojson' ))" 
+cd /
+rmdir "$dir"
+

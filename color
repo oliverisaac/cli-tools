@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+
+function color() {
+	declare -A colors=( [black]="30" [white]="37" [red]="31" [green]="32" [yellow]="33" [blue]="34" [purple]="35" [cyan]="36" [lightblue]="36" )
+
+	if [[ ${1:-} == "none" ]]; then
+	   sed -r "s/\x1B\[([0-9]{1,3}(;[0-9]{1,2})?)?[mGK]//g"
+	   return 0
+	fi
+
+	color=""
+	bold=0
+	for a in "${@}"; do
+		if [[ $a == "bold" ]]; then
+			bold=1
+		else
+			color="$a"
+		fi
+	done
+	if [[ ${color} == "" ]]; then
+		color="white"
+	fi
+
+	echo -e -n "\033[${bold};${colors[$color]}m"
+	cat
+	echo -e -n "\033[0m"
+}
+
+color "${@}"
+
