@@ -5,4 +5,4 @@ if [[ ${#args[@]} -eq 0 ]]; then
 	args=(.)
 fi
 
-pbpaste | yq -P -o json "${args[@]}"
+pbpaste | yq -P -o json . | jq "${args[@]}"

@@ -12,7 +12,7 @@ function open(){
     fi
 }
 
-urls=$( git remote | xargs -I{} git remote get-url {} )
+urls=$( git remote  |grep -v new-origin | xargs -I{} git remote get-url {} )
 
 if url=$( echo "$urls" | grep dev.azure.com  | head -n 1 ); then
     # example: git@ssh.dev.azure.com:v3/bushelpowered/terraform/unified-iac

@@ -12,4 +12,4 @@ fi
 
 tab-color cyan
 "$VIM_PATH" -p "${@}"
-tab-color clear
+tab-color "${TAB_COLOR:-clear}"
