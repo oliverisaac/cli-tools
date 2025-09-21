@@ -1,0 +1,56 @@
+#!/usr/bin/env bash
+
+function main() {
+  owner="${GITHUB_OWNER:-oliverisaac}"
+
+  default_project=$(basename "$(pwd)")
+  name="${1:-default_project}"
+
+  echo -n "Create: $owner/$name (Y/n) ?" >&2
+
+  read resp
+
+  if [[ ${resp,,} =~ n ]]; then
+    return 1
+  fi
+
+  create_github_repo "$owner" "$name"
+  create_webhook "$owner" "$name"
+
+  if [[ $default_project == $name ]]; then
+    if ! [[ -e .git ]]; then
+      git init
+    fi
+    git remote rm origin || true
+    git remote add origin "git@github.com:$owner/$name.git"
+  fi
+}
+
+function create_github_repo() {
+  local owner="$1"
+  local name="$2"
+
+  api_token=$(get_secret "github_repo_creator_token")
+
+  # TODO: Create a private github repo with no content. If the repo already exists, then continue
+}
+
+function get_secret() {
+  security find-generic-password -s "$1" -a "$(whoami)" -w
+}
+
+function create_webhook() {
+  local owner="$1"
+  local name="$2"
+
+  local webhook="https://argo-workflows.isaacinit.com/api/v1/events/argo-workflow-jobs/docker-release?dockerfile=Dockerfile&target=release"
+  local webhook_form="application/json"
+  local webhoook_secret_name="docker_release_argo_webhook_password"
+  local webhook_password
+
+  webhook_password=$(get_secret "$webhoook_secret_name")
+
+  # TODO: Add a webhook to the repo that trriggers on pushes:
+}
+
+main "${@}"

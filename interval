@@ -14,6 +14,21 @@ if [[ "${1:-}" =~ $space_regex ]]; then
     cmd=( bash -c "${@:-}" )
 fi
 
+function pretty-time(){
+    local seconds="$1"
+
+    local seconds=$(( seconds % 60 ))
+    local minutes=$(( ( seconds / 60 ) % 60 ))
+    local hours=$(( seconds / 3600 ))
+    if [[ $hours -gt 0 ]]; then
+        echo -n "${hours}h"
+    fi
+    if [[ $minutes -gt 0 ]]; then
+        echo -n "${minutes}m"
+    fi
+    echo -n "${seconds}s"
+}
+
 count=0
 >&2 echo "Running: ${cmd[*]}"
 
