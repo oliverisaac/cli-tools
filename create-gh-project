@@ -4,7 +4,7 @@ function main() {
   owner="${GITHUB_OWNER:-oliverisaac}"
 
   default_project=$(basename "$(pwd)")
-  name="${1:-default_project}"
+  name="${1:-$default_project}"
 
   echo -n "Create: $owner/$name (Y/n) ?" >&2
 
@@ -32,7 +32,28 @@ function create_github_repo() {
 
   api_token=$(get_secret "github_repo_creator_token")
 
-  # TODO: Create a private github repo with no content. If the repo already exists, then continue
+  data=$(jq -n --arg name "$name" '{"name": $name, "private": true}')
+
+  response=$(curl -s -w "%{http_code}" -L \
+    -X POST \
+    -H "Accept: application/vnd.github+json" \
+    -H "Authorization: Bearer $api_token" \
+    -H "X-GitHub-Api-Version: 2022-11-28" \
+    "https://api.github.com/user/repos" \
+    -d "$data")
+
+  http_code=${response: -3}
+  body=${response::-3}
+
+  if [[ $http_code -eq 201 ]]; then
+    echo "Repository '$owner/$name' created." >&2
+  elif [[ $http_code -eq 422 ]] && [[ $(echo "$body" | jq -e '.errors[] | select(.message == "name already exists on this account")') ]]; then
+    echo "Repository '$owner/$name' already exists." >&2
+  else
+    echo "Error creating repository:" >&2
+    echo "$body" >&2
+    return 1
+  fi
 }
 
 function get_secret() {
@@ -49,8 +70,44 @@ function create_webhook() {
   local webhook_password
 
   webhook_password=$(get_secret "$webhoook_secret_name")
+  api_token=$(get_secret "github_repo_creator_token")
 
-  # TODO: Add a webhook to the repo that trriggers on pushes:
+  data=$(jq -n \
+    --arg url "$webhook" \
+    --arg content_type "$webhook_form" \
+    --arg secret "$webhook_password" \
+    '{
+      "name": "web",
+      "active": true,
+      "events": ["push"],
+      "config": {
+        "url": $url,
+        "content_type": $content_type,
+        "secret": $secret
+      }
+    }')
+
+  response=$(curl -s -w "%{http_code}" -L \
+    -X POST \
+    -H "Accept: application/vnd.github+json" \
+    -H "Content-type: application/vnd.github+json" \
+    -H "Authorization: Bearer $api_token" \
+    -H "X-GitHub-Api-Version: 2022-11-28" \
+    "https://api.github.com/repos/$owner/$name/hooks" \
+    -d "$data")
+
+  http_code=${response: -3}
+  body=${response::-3}
+
+  if [[ $http_code -eq 201 ]]; then
+    echo "Webhook created for '$owner/$name'." >&2
+  elif [[ $http_code -eq 422 ]] && [[ $(echo "$body" | jq -e '.errors[] | select(.message == "Hook already exists on this repository")') ]]; then
+    echo "Webhook for '$owner/$name' already exists." >&2
+  else
+    echo "Error creating webhook:" >&2
+    echo "$body" >&2
+    return 1
+  fi
 }
 
 main "${@}"

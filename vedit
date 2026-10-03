@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 
 if [[ $BASH_VERSION != 5.* ]]; then
-    echo >&2 "ERROR: This script requires bash version 5"
-    echo >&2 "Run: brew install bash"
-    exit 1
+  echo >&2 "ERROR: This script requires bash version 5"
+  echo >&2 "Run: brew install bash"
+  exit 1
 fi
 
 set -Eeuo pipefail
@@ -12,15 +12,15 @@ shopt -s inherit_errexit
 export createSecretOption="Create new secret"
 
 function get_vault_path() {
-    local path
-    path="${1:-}"
-    upADir="../ (up a directory)"
+  local path
+  path="${1:-}"
+  upADir="../ (up a directory)"
 
-    while [[ $path =~ /$ ]]; do
-        new_path=$(
-            vault kv list -format=json "${path}" |
-                jq --arg createSecret "$createSecretOption" --arg upADir "$upADir" -r '[  $upADir, $createSecret ] + . | .[]' |
-                fzf --prompt="Path: ${path}" --preview="
+  while [[ $path =~ /$ ]]; do
+    new_path=$(
+      vault kv list -format=json "${path}" |
+        jq --arg createSecret "$createSecretOption" --arg upADir "$upADir" -r '[  $upADir, $createSecret ] + . | .[]' |
+        fzf --prompt="Path: ${path}" --preview="
             if [[ {} == '$createSecretOption' ]]; then
                 echo 'Create new secret...'
             elif [[ {} =~ /$ ]]; then
@@ -28,63 +28,65 @@ function get_vault_path() {
             else
                 vault kv get -format=table '${path}{}' 
             fi"
-        )
-        if [[ ${new_path} == "$upADir" ]]; then
-            up_path="$(dirname "$path")/"
-            if [[ $up_path != "./" ]]; then
-                path="$up_path"
-            fi
-        else
-            path="${path%/}/${new_path}"
-        fi
-    done
-    echo "$path"
+    )
+    if [[ ${new_path} == "$upADir" ]]; then
+      up_path="$(dirname "$path")/"
+      if [[ $up_path != "./" ]]; then
+        path="$up_path"
+      fi
+    else
+      path="${path%/}/${new_path}"
+    fi
+  done
+  echo "$path"
 }
 
 function main() {
-    if ! vault token lookup; then
-        echo >&2 "ERROR: Vault token not found"
-        echo >&2 "You can login with: vault login -method=ldap username=SSO_USERNAME"
-        exit 1
+  if ! vault token lookup; then
+    echo >&2 "ERROR: Vault token not found"
+    echo >&2 "You can login with: vault login -method=ldap username=SSO_USERNAME"
+    exit 1
+  fi
+
+  local path
+  path=$(get_vault_path "${1:-${VEDIT_DEFAULT_KV_PATH:-secret/}}")
+
+  if [[ ${path##*/} == "$createSecretOption" ]]; then
+    read -p "Enter the new secret name: ${path%/*}/" new_secret
+    path="${path%/*}/${new_secret}"
+    if ! vault kv get "$path" >/dev/null; then
+      echo >&2 "Creating new secret: ${path}"
+      vault kv put "${path}" placeholder="delete-this" >/dev/null
+    else
+      echo >&2 "ERROR: Secret already exists: ${path}"
     fi
+  fi
 
-    local path
-    path=$(get_vault_path "${1:-${VEDIT_DEFAULT_KV_PATH:-secret/}}")
+  if ! content=$(vault kv get -format=json "${path}" | jq -r '.data.data' | yq -P -o yaml); then
+    content=""
+  fi
 
-    if [[ ${path##*/} == "$createSecretOption" ]]; then
-        read -p "Enter the new secret name: ${path%/*}/" new_secret
-        path="${path%/*}/${new_secret}"
-        if ! vault kv get "$path" >/dev/null; then
-            echo >&2 "Creating new secret: ${path}"
-            vault kv put "${path}" placeholder="delete-this" >/dev/null
-        else
-            echo >&2 "ERROR: Secret already exists: ${path}"
-        fi
-    fi
+  tmpfile=$(mktemp --suffix=.yaml)
 
-    content=$(vault kv get -format=json "${path}" | jq -r '.data.data' | yq -P -o yaml)
+  echo >&2 "Editing at: ${tmpfile}"
+  echo "${content}" >"${tmpfile}"
 
-    tmpfile=$(mktemp --suffix=.yaml)
+  if ! "${EDITOR:=vim}" "${tmpfile}"; then
+    echo >&2 "ERROR: ${EDITOR} did not exit cleanly"
+    exit 1
+  fi
 
-    echo >&2 "Editing at: ${tmpfile}"
-    echo "${content}" >"${tmpfile}"
+  new_content=$(cat "${tmpfile}")
+  if [[ "${new_content}" == "${content}" ]]; then
+    echo >&2 "No changes detected, exiting"
+    exit 0
+  fi
 
-    if ! "${EDITOR:=vim}" "${tmpfile}"; then
-        echo >&2 "ERROR: ${EDITOR} did not exit cleanly"
-        exit 1
-    fi
-
-    new_content=$(cat "${tmpfile}")
-    if [[ "${new_content}" == "${content}" ]]; then
-        echo >&2 "No changes detected, exiting"
-        exit 0
-    fi
-
-    cat "${tmpfile}" | yq -o json . | vault kv put "${path}" @/dev/stdin
-    echo >&2
-    echo >&2 "Updated path: ${path}"
-    echo >&2
-    vault kv get "${path}"
+  cat "${tmpfile}" | yq -o json . | vault kv put "${path}" @/dev/stdin
+  echo >&2
+  echo >&2 "Updated path: ${path}"
+  echo >&2
+  vault kv get "${path}"
 }
 
 main "${@}"
